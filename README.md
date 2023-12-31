@@ -1,3 +1,7 @@
+# Introduction
+
+I forked mgba and removed a bunch of features. I'm using mgba to distribute copies of a gba game for windows users. I believe that the mgba license permits this, as long as I share my changes to the mgba source tree. Hence this public repository.
+
 mGBA
 ====
 
