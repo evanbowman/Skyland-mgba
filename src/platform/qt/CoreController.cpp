@@ -33,6 +33,7 @@
 
 using namespace QGBA;
 
+
 CoreController::CoreController(mCore* core, QObject* parent)
 	: QObject(parent)
 	, m_loadStateFlags(SAVESTATE_SCREENSHOT | SAVESTATE_RTC)

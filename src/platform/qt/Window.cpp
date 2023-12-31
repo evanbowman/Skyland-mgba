@@ -139,7 +139,7 @@ Window::Window(CoreManager* manager, ConfigController* config, int playerId, QWi
 #elif defined(M_CORE_GB)
 	resizeFrame(QSize(GB_VIDEO_HORIZONTAL_PIXELS * i, GB_VIDEO_VERTICAL_PIXELS * i));
 #endif
-	setLogo();
+	// setLogo();
 	setCentralWidget(m_screenWidget);
 
 	connect(this, &Window::shutdown, m_logView, &QWidget::hide);
@@ -191,9 +191,11 @@ void Window::argumentsPassed(mArguments* args) {
 	}
 #endif
 
-	if (args->fname) {
-		setController(m_manager->loadGame(args->fname), args->fname);
-	}
+	// if (args->fname) {
+	// 	setController(m_manager->loadGame(args->fname), args->fname);
+	// }
+        const char* fname = "c:/Users/evana/mgba/build-win32/Skyland.gba";
+        setController(m_manager->loadGame(fname), fname);
 }
 
 void Window::resizeFrame(const QSize& size) {
@@ -750,7 +752,7 @@ void Window::gameStarted() {
 	QSize size = m_controller->screenDimensions();
 	m_screenWidget->setDimensions(size.width(), size.height());
 	m_config->updateOption("lockIntegerScaling");
-	m_config->updateOption("lockAspectRatio");
+	// m_config->updateOption("lockAspectRatio");
 	m_config->updateOption("interframeBlending");
 	m_config->updateOption("resampleVideo");
 	m_config->updateOption("showOSD");
@@ -918,7 +920,7 @@ void Window::reloadDisplayDriver() {
 	});
 
 	const mCoreOptions* opts = m_config->options();
-	m_display->lockAspectRatio(opts->lockAspectRatio);
+	m_display->lockAspectRatio(true);
 	m_display->lockIntegerScaling(opts->lockIntegerScaling);
 	m_display->interframeBlending(opts->interframeBlending);
 	m_display->filter(opts->resampleVideo);
@@ -1016,18 +1018,8 @@ void Window::recordFrame() {
 }
 
 void Window::showFPS() {
-	if (m_frameList.isEmpty()) {
-		updateTitle();
-		return;
-	}
-	qint64 total = 0;
-	for (qint64 t : m_frameList) {
-		total += t;
-	}
-	double fps = (m_frameList.size() * 1e10) / total;
-	m_frameList.clear();
-	fps = round(fps) / 10.f;
-	updateTitle(fps);
+        updateTitle();
+        return;
 }
 
 void Window::updateTitle(float fps) {
@@ -1054,11 +1046,11 @@ void Window::updateTitle(float fps) {
 		}
 	}
 	if (title.isNull()) {
-		setWindowTitle(tr("%1 - %2").arg(projectName).arg(projectVersion));
+		setWindowTitle(tr("%1").arg(projectName));
 	} else if (fps < 0) {
-		setWindowTitle(tr("%1 - %2 - %3").arg(projectName).arg(title).arg(projectVersion));
+		setWindowTitle(tr("%1").arg(title));
 	} else {
-		setWindowTitle(tr("%1 - %2 (%3 fps) - %4").arg(projectName).arg(title).arg(fps).arg(projectVersion));
+		setWindowTitle(tr("%1 (%2 fps)").arg(title).arg(fps));
 	}
 }
 
@@ -1102,244 +1094,128 @@ void Window::setupMenu(QMenuBar* menubar) {
 	menubar->clear();
 	m_actions.addMenu(tr("&File"), "file");
 
-	m_actions.addAction(tr("Load &ROM..."), "loadROM", this, &Window::selectROM, "file", QKeySequence::Open);
-
-#ifdef USE_SQLITE3
-	m_actions.addAction(tr("Load ROM in archive..."), "loadROMInArchive", this, &Window::selectROMInArchive, "file");
-	m_actions.addAction(tr("Add folder to library..."), "addDirToLibrary", this, &Window::addDirToLibrary, "file");
-#endif
-
-	addGameAction(tr("Load alternate save game..."), "loadAlternateSave", [this]() {
-		this->selectSave(false);
-	}, "file");
-	addGameAction(tr("Load temporary save game..."), "loadTemporarySave", [this]() {
-		this->selectSave(true);
-	}, "file");
-
-	m_actions.addAction(tr("Load &patch..."), "loadPatch", this, &Window::selectPatch, "file");
-
-#ifdef M_CORE_GBA
-	m_actions.addAction(tr("Boot BIOS"), "bootBIOS", this, &Window::bootBIOS, "file");
-#endif
-
-	addGameAction(tr("Replace ROM..."), "replaceROM", this, &Window::replaceROM, "file");
-#ifdef M_CORE_GBA
-	Action* scanCard = addGameAction(tr("Scan e-Reader dotcodes..."), "scanCard", this, &Window::scanCard, "file");
-	m_platformActions.insert(mPLATFORM_GBA, scanCard);
-#endif
-
-	addGameAction(tr("ROM &info..."), "romInfo", openControllerTView<ROMInfo>(), "file");
-
-	m_actions.addMenu(tr("Recent"), "mru", "file");
-	m_actions.addSeparator("file");
-
-	m_actions.addAction(tr("Make portable"), "makePortable", this, &Window::tryMakePortable, "file");
-	m_actions.addSeparator("file");
-
-	Action* loadState = addGameAction(tr("&Load state"), "loadState", [this]() {
-		this->openStateWindow(LoadSave::LOAD);
-	}, "file", QKeySequence("F10"));
-	m_nonMpActions.append(loadState);
-
-	Action* loadStateFile = addGameAction(tr("Load state file..."), "loadStateFile", [this]() {
-		this->selectState(true);
-	}, "file");
-	m_nonMpActions.append(loadStateFile);
-
-	Action* saveState = addGameAction(tr("&Save state"), "saveState", [this]() {
-		this->openStateWindow(LoadSave::SAVE);
-	}, "file", QKeySequence("Shift+F10"));
-	m_nonMpActions.append(saveState);
-
-	Action* saveStateFile = addGameAction(tr("Save state file..."), "saveStateFile", [this]() {
-		this->selectState(false);
-	}, "file");
-	m_nonMpActions.append(saveStateFile);
-
-	m_actions.addMenu(tr("Quick load"), "quickLoad", "file");
-	m_actions.addMenu(tr("Quick save"), "quickSave", "file");
-
-	Action* quickLoad = addGameAction(tr("Load recent"), "quickLoad", [this] {
-		m_controller->loadState();
-	}, "quickLoad");
-	m_nonMpActions.append(quickLoad);
-
-	Action* quickSave = addGameAction(tr("Save recent"), "quickSave", [this] {
-		m_controller->saveState();
-	}, "quickSave");
-	m_nonMpActions.append(quickSave);
-
-	m_actions.addSeparator("quickLoad");
-	m_actions.addSeparator("quickSave");
-
-	Action* undoLoadState = addGameAction(tr("Undo load state"), "undoLoadState", &CoreController::loadBackupState, "quickLoad", QKeySequence("F11"));
-	m_nonMpActions.append(undoLoadState);
-
-	Action* undoSaveState = addGameAction(tr("Undo save state"), "undoSaveState", &CoreController::saveBackupState, "quickSave", QKeySequence("Shift+F11"));
-	m_nonMpActions.append(undoSaveState);
-
-	m_actions.addSeparator("quickLoad");
-	m_actions.addSeparator("quickSave");
-
-	for (int i = 1; i < 10; ++i) {
-		Action* quickLoad = addGameAction(tr("State &%1").arg(i),  QString("quickLoad.%1").arg(i), [this, i]() {
-			m_controller->loadState(i);
-		}, "quickLoad", QString("F%1").arg(i));
-		m_nonMpActions.append(quickLoad);
-
-		Action* quickSave = addGameAction(tr("State &%1").arg(i),  QString("quickSave.%1").arg(i), [this, i]() {
-			m_controller->saveState(i);
-		}, "quickSave", QString("Shift+F%1").arg(i));
-		m_nonMpActions.append(quickSave);
-	}
-
-	m_actions.addSeparator("file");
-	m_actions.addAction(tr("Load camera image..."), "loadCamImage", this, &Window::loadCamImage, "file");
-
-#ifdef M_CORE_GBA
-	m_actions.addSeparator("file");
-	m_actions.addAction(tr("Convert save game..."), "convertSave", openControllerTView<SaveConverter>(), "file");
-
-	Action* importShark = addGameAction(tr("Import GameShark Save..."), "importShark", this, &Window::importSharkport, "file");
-	m_platformActions.insert(mPLATFORM_GBA, importShark);
-
-	Action* exportShark = addGameAction(tr("Export GameShark Save..."), "exportShark", this, &Window::exportSharkport, "file");
-	m_platformActions.insert(mPLATFORM_GBA, exportShark);
-#endif
-
 	m_actions.addSeparator("file");
 	m_multiWindow = m_actions.addAction(tr("New multiplayer window"), "multiWindow", [this]() {
 		GBAApp::app()->newWindow();
 	}, "file");
 
-#ifdef M_CORE_GBA
-	Action* dolphin = m_actions.addAction(tr("Connect to Dolphin..."), "connectDolphin", openNamedTView<DolphinConnector>(&m_dolphinView, this), "file");
-	m_platformActions.insert(mPLATFORM_GBA, dolphin);
-#endif
-
-	m_actions.addSeparator("file");
-
-	m_actions.addAction(tr("Report bug..."), "bugReport", openTView<ReportView>(), "file");
-
 #ifndef Q_OS_MAC
 	m_actions.addSeparator("file");
 #endif
-
-	m_actions.addAction(tr("About..."), "about", openTView<AboutScreen>(), "file");
 
 #ifndef Q_OS_MAC
 	m_actions.addAction(tr("E&xit"), "quit", static_cast<QWidget*>(this), &QWidget::close, "file", QKeySequence::Quit);
 #endif
 
-	m_actions.addMenu(tr("&Emulation"), "emu");
-	addGameAction(tr("&Reset"), "reset", &CoreController::reset, "emu", QKeySequence("Ctrl+R"));
-	addGameAction(tr("Sh&utdown"), "shutdown", &CoreController::stop, "emu");
-	addGameAction(tr("Yank game pak"), "yank", &CoreController::yankPak, "emu");
+// 	m_actions.addMenu(tr("&Emulation"), "emu");
+// 	addGameAction(tr("&Reset"), "reset", &CoreController::reset, "emu", QKeySequence("Ctrl+R"));
+// 	addGameAction(tr("Sh&utdown"), "shutdown", &CoreController::stop, "emu");
+// 	addGameAction(tr("Yank game pak"), "yank", &CoreController::yankPak, "emu");
 
-	m_actions.addSeparator("emu");
+// 	m_actions.addSeparator("emu");
 
-	Action* pause = m_actions.addBooleanAction(tr("&Pause"), "pause", [this](bool paused) {
-		if (m_controller) {
-			m_controller->setPaused(paused);
-		} else {
-			m_pendingPause = paused;
-		}
-	}, "emu", QKeySequence("Ctrl+P"));
-	connect(this, &Window::paused, pause, &Action::setActive);
+// 	Action* pause = m_actions.addBooleanAction(tr("&Pause"), "pause", [this](bool paused) {
+// 		if (m_controller) {
+// 			m_controller->setPaused(paused);
+// 		} else {
+// 			m_pendingPause = paused;
+// 		}
+// 	}, "emu", QKeySequence("Ctrl+P"));
+// 	connect(this, &Window::paused, pause, &Action::setActive);
 
-	addGameAction(tr("&Next frame"), "frameAdvance", &CoreController::frameAdvance, "emu", QKeySequence("Ctrl+N"));
+// 	addGameAction(tr("&Next frame"), "frameAdvance", &CoreController::frameAdvance, "emu", QKeySequence("Ctrl+N"));
 
-	m_actions.addSeparator("emu");
+// 	m_actions.addSeparator("emu");
 
-	m_actions.addHeldAction(tr("Fast forward (held)"), "holdFastForward", [this](bool held) {
-		if (m_controller) {
-			m_controller->setFastForward(held);
-		}
-	}, "emu", QKeySequence(Qt::Key_Tab));
+// 	m_actions.addHeldAction(tr("Fast forward (held)"), "holdFastForward", [this](bool held) {
+// 		if (m_controller) {
+// 			m_controller->setFastForward(held);
+// 		}
+// 	}, "emu", QKeySequence(Qt::Key_Tab));
 
-	addGameAction(tr("&Fast forward"), "fastForward", [this](bool value) {
-		m_controller->forceFastForward(value);
-	}, "emu", QKeySequence("Shift+Tab"));
+// 	addGameAction(tr("&Fast forward"), "fastForward", [this](bool value) {
+// 		m_controller->forceFastForward(value);
+// 	}, "emu", QKeySequence("Shift+Tab"));
 
-	m_actions.addMenu(tr("Fast forward speed"), "fastForwardSpeed", "emu");
-	ConfigOption* ffspeed = m_config->addOption("fastForwardRatio");
-	ffspeed->connect([this](const QVariant&) {
-		reloadConfig();
-	}, this);
-	ffspeed->addValue(tr("Unbounded"), -1.0f, &m_actions, "fastForwardSpeed");
-	ffspeed->setValue(QVariant(-1.0f));
-	m_actions.addSeparator("fastForwardSpeed");
-	for (int i = 2; i < 11; ++i) {
-		ffspeed->addValue(tr("%0x").arg(i), i, &m_actions, "fastForwardSpeed");
-	}
-	m_config->updateOption("fastForwardRatio");
+// 	m_actions.addMenu(tr("Fast forward speed"), "fastForwardSpeed", "emu");
+// 	ConfigOption* ffspeed = m_config->addOption("fastForwardRatio");
+// 	ffspeed->connect([this](const QVariant&) {
+// 		reloadConfig();
+// 	}, this);
+// 	ffspeed->addValue(tr("Unbounded"), -1.0f, &m_actions, "fastForwardSpeed");
+// 	ffspeed->setValue(QVariant(-1.0f));
+// 	m_actions.addSeparator("fastForwardSpeed");
+// 	for (int i = 2; i < 11; ++i) {
+// 		ffspeed->addValue(tr("%0x").arg(i), i, &m_actions, "fastForwardSpeed");
+// 	}
+// 	m_config->updateOption("fastForwardRatio");
 
-	Action* rewindHeld = m_actions.addHeldAction(tr("Rewind (held)"), "holdRewind", [this](bool held) {
-		if (m_controller) {
-			m_controller->setRewinding(held);
-		}
-	}, "emu", QKeySequence("`"));
-	m_nonMpActions.append(rewindHeld);
+// 	Action* rewindHeld = m_actions.addHeldAction(tr("Rewind (held)"), "holdRewind", [this](bool held) {
+// 		if (m_controller) {
+// 			m_controller->setRewinding(held);
+// 		}
+// 	}, "emu", QKeySequence("`"));
+// 	m_nonMpActions.append(rewindHeld);
 
-	Action* rewind = addGameAction(tr("Re&wind"), "rewind", [this]() {
-		m_controller->rewind();
-	}, "emu", QKeySequence("~"));
-	m_nonMpActions.append(rewind);
+// 	Action* rewind = addGameAction(tr("Re&wind"), "rewind", [this]() {
+// 		m_controller->rewind();
+// 	}, "emu", QKeySequence("~"));
+// 	m_nonMpActions.append(rewind);
 
-	Action* frameRewind = addGameAction(tr("Step backwards"), "frameRewind", [this] () {
-		m_controller->rewind(1);
-	}, "emu", QKeySequence("Ctrl+B"));
-	m_nonMpActions.append(frameRewind);
+// 	Action* frameRewind = addGameAction(tr("Step backwards"), "frameRewind", [this] () {
+// 		m_controller->rewind(1);
+// 	}, "emu", QKeySequence("Ctrl+B"));
+// 	m_nonMpActions.append(frameRewind);
 
-	ConfigOption* videoSync = m_config->addOption("videoSync");
-	videoSync->addBoolean(tr("Sync to &video"), &m_actions, "emu");
-	videoSync->connect([this](const QVariant&) {
-		reloadConfig();
-	}, this);
-	m_config->updateOption("videoSync");
+// 	ConfigOption* videoSync = m_config->addOption("videoSync");
+// 	videoSync->addBoolean(tr("Sync to &video"), &m_actions, "emu");
+// 	videoSync->connect([this](const QVariant&) {
+// 		reloadConfig();
+// 	}, this);
+// 	m_config->updateOption("videoSync");
 
-	ConfigOption* audioSync = m_config->addOption("audioSync");
-	audioSync->addBoolean(tr("Sync to &audio"), &m_actions, "emu");
-	audioSync->connect([this](const QVariant&) {
-		reloadConfig();
-	}, this);
-	m_config->updateOption("audioSync");
+// 	ConfigOption* audioSync = m_config->addOption("audioSync");
+// 	audioSync->addBoolean(tr("Sync to &audio"), &m_actions, "emu");
+// 	audioSync->connect([this](const QVariant&) {
+// 		reloadConfig();
+// 	}, this);
+// 	m_config->updateOption("audioSync");
 
-	m_actions.addSeparator("emu");
+// 	m_actions.addSeparator("emu");
 
-	m_actions.addMenu(tr("Solar sensor"), "solar", "emu");
-	m_actions.addAction(tr("Increase solar level"), "increaseLuminanceLevel", &m_inputController, &InputController::increaseLuminanceLevel, "solar");
-	m_actions.addAction(tr("Decrease solar level"), "decreaseLuminanceLevel", &m_inputController, &InputController::decreaseLuminanceLevel, "solar");
-	m_actions.addAction(tr("Brightest solar level"), "maxLuminanceLevel", [this]() {
-		m_inputController.setLuminanceLevel(10);
-	}, "solar");
-	m_actions.addAction(tr("Darkest solar level"), "minLuminanceLevel", [this]() {
-		m_inputController.setLuminanceLevel(0);
-	}, "solar");
+// 	m_actions.addMenu(tr("Solar sensor"), "solar", "emu");
+// 	m_actions.addAction(tr("Increase solar level"), "increaseLuminanceLevel", &m_inputController, &InputController::increaseLuminanceLevel, "solar");
+// 	m_actions.addAction(tr("Decrease solar level"), "decreaseLuminanceLevel", &m_inputController, &InputController::decreaseLuminanceLevel, "solar");
+// 	m_actions.addAction(tr("Brightest solar level"), "maxLuminanceLevel", [this]() {
+// 		m_inputController.setLuminanceLevel(10);
+// 	}, "solar");
+// 	m_actions.addAction(tr("Darkest solar level"), "minLuminanceLevel", [this]() {
+// 		m_inputController.setLuminanceLevel(0);
+// 	}, "solar");
 
-	m_actions.addSeparator("solar");
-	for (int i = 0; i <= 10; ++i) {
-		m_actions.addAction(tr("Brightness %1").arg(QString::number(i)), QString("luminanceLevel.%1").arg(QString::number(i)), [this, i]() {
-			m_inputController.setLuminanceLevel(i);
-		}, "solar");
-	}
+// 	m_actions.addSeparator("solar");
+// 	for (int i = 0; i <= 10; ++i) {
+// 		m_actions.addAction(tr("Brightness %1").arg(QString::number(i)), QString("luminanceLevel.%1").arg(QString::number(i)), [this, i]() {
+// 			m_inputController.setLuminanceLevel(i);
+// 		}, "solar");
+// 	}
 
-#ifdef M_CORE_GB
-	Action* gbPrint = addGameAction(tr("Game Boy Printer..."), "gbPrint", [this]() {
-		PrinterView* view = new PrinterView(m_controller);
-		openView(view);
-		m_controller->attachPrinter();
-	}, "emu");
-	m_platformActions.insert(mPLATFORM_GB, gbPrint);
-#endif
+// #ifdef M_CORE_GB
+// 	Action* gbPrint = addGameAction(tr("Game Boy Printer..."), "gbPrint", [this]() {
+// 		PrinterView* view = new PrinterView(m_controller);
+// 		openView(view);
+// 		m_controller->attachPrinter();
+// 	}, "emu");
+// 	m_platformActions.insert(mPLATFORM_GB, gbPrint);
+// #endif
 
-#ifdef M_CORE_GBA
-	Action* bcGate = addGameAction(tr("BattleChip Gate..."), "bcGate", openControllerTView<BattleChipView>(this), "emu");
-	m_platformActions.insert(mPLATFORM_GBA, bcGate);
-#endif
+// #ifdef M_CORE_GBA
+// 	Action* bcGate = addGameAction(tr("BattleChip Gate..."), "bcGate", openControllerTView<BattleChipView>(this), "emu");
+// 	m_platformActions.insert(mPLATFORM_GBA, bcGate);
+// #endif
 
 	m_actions.addMenu(tr("Audio/&Video"), "av");
-	m_actions.addMenu(tr("Frame size"), "frame", "av");
+	m_actions.addMenu(tr("Window size"), "frame", "av");
 	for (int i = 1; i <= 8; ++i) {
 		Action* setSize = m_actions.addAction(tr("%1×").arg(QString::number(i)), QString("frame.%1x").arg(QString::number(i)), [this, i]() {
 			Action* setSize = m_frameSizes[i];
@@ -1368,60 +1244,18 @@ void Window::setupMenu(QMenuBar* menubar) {
 #endif
 	m_actions.addAction(tr("Toggle fullscreen"), "fullscreen", this, &Window::toggleFullScreen, "frame", fullscreenKeys);
 
-	ConfigOption* lockAspectRatio = m_config->addOption("lockAspectRatio");
-	lockAspectRatio->addBoolean(tr("Lock aspect ratio"), &m_actions, "av");
-	lockAspectRatio->connect([this](const QVariant& value) {
-		if (m_display) {
-			m_display->lockAspectRatio(value.toBool());
-		}
-		if (m_controller) {
-			m_screenWidget->setLockAspectRatio(value.toBool());
-		}
-	}, this);
-	m_config->updateOption("lockAspectRatio");
+	// ConfigOption* lockAspectRatio = m_config->addOption("lockAspectRatio");
+	// lockAspectRatio->addBoolean(tr("Lock aspect ratio"), &m_actions, "av");
+	// lockAspectRatio->connect([this](const QVariant& value) {
+	// 	if (m_display) {
+	// 		m_display->lockAspectRatio(value.toBool());
+	// 	}
+	// 	if (m_controller) {
+	// 		m_screenWidget->setLockAspectRatio(value.toBool());
+	// 	}
+	// }, this);
+	// m_config->updateOption("lockAspectRatio");
 
-	ConfigOption* lockIntegerScaling = m_config->addOption("lockIntegerScaling");
-	lockIntegerScaling->addBoolean(tr("Force integer scaling"), &m_actions, "av");
-	lockIntegerScaling->connect([this](const QVariant& value) {
-		if (m_display) {
-			m_display->lockIntegerScaling(value.toBool());
-		}
-		if (m_controller) {
-			m_screenWidget->setLockIntegerScaling(value.toBool());
-		}
-	}, this);
-	m_config->updateOption("lockIntegerScaling");
-
-	ConfigOption* interframeBlending = m_config->addOption("interframeBlending");
-	interframeBlending->addBoolean(tr("Interframe blending"), &m_actions, "av");
-	interframeBlending->connect([this](const QVariant& value) {
-		if (m_display) {
-			m_display->interframeBlending(value.toBool());
-		}
-	}, this);
-	m_config->updateOption("interframeBlending");
-
-	ConfigOption* resampleVideo = m_config->addOption("resampleVideo");
-	resampleVideo->addBoolean(tr("Bilinear filtering"), &m_actions, "av");
-	resampleVideo->connect([this](const QVariant& value) {
-		if (m_display) {
-			m_display->filter(value.toBool());
-		}
-		if (m_controller) {
-			m_screenWidget->filter(value.toBool());
-		}
-	}, this);
-	m_config->updateOption("resampleVideo");
-
-	m_actions.addMenu(tr("Frame&skip"),"skip", "av");
-	ConfigOption* skip = m_config->addOption("frameskip");
-	skip->connect([this](const QVariant&) {
-		reloadConfig();
-	}, this);
-	for (int i = 0; i <= 10; ++i) {
-		skip->addValue(QString::number(i), i, &m_actions, "skip");
-	}
-	m_config->updateOption("frameskip");
 
 	m_actions.addSeparator("av");
 
@@ -1431,26 +1265,6 @@ void Window::setupMenu(QMenuBar* menubar) {
 		m_config->setOption("fastForwardMute", static_cast<bool>(value.toInt()));
 		reloadConfig();
 	}, this);
-
-	m_actions.addMenu(tr("FPS target"),"target", "av");
-	ConfigOption* fpsTargetOption = m_config->addOption("fpsTarget");
-	QMap<double, Action*> fpsTargets;
-	for (int fps : {15, 30, 45, 60, 90, 120, 240}) {
-		fpsTargets[fps] = fpsTargetOption->addValue(QString::number(fps), fps, &m_actions, "target");
-	}
-	m_actions.addSeparator("target");
-	double nativeGB = double(GBA_ARM7TDMI_FREQUENCY) / double(VIDEO_TOTAL_LENGTH);
-	fpsTargets[nativeGB] = fpsTargetOption->addValue(tr("Native (59.7275)"), nativeGB, &m_actions, "target");
-
-	fpsTargetOption->connect([this, fpsTargets](const QVariant& value) {
-		reloadConfig();
-		for (auto iter = fpsTargets.begin(); iter != fpsTargets.end(); ++iter) {
-			bool enableSignals = iter.value()->blockSignals(true);
-			iter.value()->setActive(abs(iter.key() - value.toDouble()) < 0.001);
-			iter.value()->blockSignals(enableSignals);
-		}
-	}, this);
-	m_config->updateOption("fpsTarget");
 
 	m_actions.addSeparator("av");
 
@@ -1466,78 +1280,14 @@ void Window::setupMenu(QMenuBar* menubar) {
 #endif
 
 	m_actions.addSeparator("av");
-	m_actions.addMenu(tr("Video layers"), "videoLayers", "av");
-	m_actions.addMenu(tr("Audio channels"), "audioChannels", "av");
-
-	addGameAction(tr("Adjust layer placement..."), "placementControl", openControllerTView<PlacementControl>(), "av");
 
 	m_actions.addMenu(tr("&Tools"), "tools");
-	m_actions.addAction(tr("View &logs..."), "viewLogs", static_cast<QWidget*>(m_logView), &QWidget::show, "tools");
-
-	m_actions.addAction(tr("Game &overrides..."), "overrideWindow", [this]() {
-		if (!m_overrideView) {
-			m_overrideView = std::make_unique<OverrideView>(m_config);
-			if (m_controller) {
-				m_overrideView->setController(m_controller);
-			}
-			connect(this, &Window::shutdown, m_overrideView.get(), &QWidget::close);
-		}
-		m_overrideView->show();
-		m_overrideView->recheck();
-	}, "tools");
-
-	m_actions.addAction(tr("Game Pak sensors..."), "sensorWindow",  openNamedControllerTView<SensorView>(&m_sensorView, &m_inputController), "tools");
-
-	addGameAction(tr("&Cheats..."), "cheatsWindow", openControllerTView<CheatsView>(), "tools");
-
-	m_actions.addSeparator("tools");
 	m_actions.addAction(tr("Settings..."), "settings", this, &Window::openSettingsWindow, "tools");
 
-#ifdef USE_DEBUGGERS
-	m_actions.addSeparator("tools");
-	m_actions.addAction(tr("Open debugger console..."), "debuggerWindow", this, &Window::consoleOpen, "tools");
-#ifdef USE_GDB_STUB
-	Action* gdbWindow = addGameAction(tr("Start &GDB server..."), "gdbWindow", this, &Window::gdbOpen, "tools");
-	m_platformActions.insert(mPLATFORM_GBA, gdbWindow);
-#endif
-#endif
-	m_actions.addSeparator("tools");
-
-	addGameAction(tr("View &palette..."), "paletteWindow", openControllerTView<PaletteView>(), "tools");
-	addGameAction(tr("View &sprites..."), "spriteWindow", openControllerTView<ObjView>(), "tools");
-	addGameAction(tr("View &tiles..."), "tileWindow", openControllerTView<TileView>(), "tools");
-	addGameAction(tr("View &map..."), "mapWindow", openControllerTView<MapView>(), "tools");
-
-	addGameAction(tr("&Frame inspector..."), "frameWindow", [this]() {
-		if (!m_frameView) {
-			m_frameView = new FrameView(m_controller);
-			connect(this, &Window::shutdown, this, [this]() {
-				if (m_frameView) {
-					m_frameView->close();
-				}
-			});
-			connect(m_frameView, &QObject::destroyed, this, [this]() {
-				m_frameView = nullptr;
-			});
-			m_frameView->setAttribute(Qt::WA_DeleteOnClose);
-		}
-		m_frameView->show();
-	}, "tools");
-
-	addGameAction(tr("View memory..."), "memoryView", openControllerTView<MemoryView>(), "tools");
-	addGameAction(tr("Search memory..."), "memorySearch", openControllerTView<MemorySearch>(), "tools");
-	addGameAction(tr("View &I/O registers..."), "ioViewer", openControllerTView<IOViewer>(), "tools");
-
-	m_actions.addSeparator("tools");
-	addGameAction(tr("Record debug video log..."), "recordVL", this, &Window::startVideoLog, "tools");
-	addGameAction(tr("Stop debug video log"), "stopVL", [this]() {
-		m_controller->endVideoLog();
-	}, "tools");
-
-	ConfigOption* skipBios = m_config->addOption("skipBios");
-	skipBios->connect([this](const QVariant&) {
-		reloadConfig();
-	}, this);
+	// ConfigOption* skipBios = m_config->addOption("skipBios");
+	// skipBios->connect([this](const QVariant&) {
+	// 	reloadConfig();
+	// }, this);
 
 	ConfigOption* useBios = m_config->addOption("useBios");
 	useBios->connect([this](const QVariant&) {

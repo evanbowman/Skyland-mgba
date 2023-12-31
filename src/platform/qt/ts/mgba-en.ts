@@ -4559,7 +4559,7 @@ Game Boy Advance is a registered trademark of Nintendo Co., Ltd.</source>
     </message>
     <message>
         <location filename="../Window.cpp" line="1466"/>
-        <source>&amp;Tools</source>
+        <source>&amp;Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

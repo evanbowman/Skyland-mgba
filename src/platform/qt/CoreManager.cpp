@@ -18,6 +18,12 @@
 #include <mgba/core/core.h>
 #include <mgba-util/vfs.h>
 
+#include "incbin.h"
+
+
+INCBIN(Skyland_rom, "Skyland.gba");
+
+
 using namespace QGBA;
 
 void CoreManager::setConfig(const mCoreConfig* config) {
@@ -29,52 +35,12 @@ void CoreManager::setMultiplayerController(MultiplayerController* multiplayer) {
 }
 
 CoreController* CoreManager::loadGame(const QString& path) {
-	QFileInfo info(path);
-	if (!info.isReadable()) {
-		QString fname = info.fileName();
-		QString base = info.path();
-		if (base.endsWith("/") || base.endsWith(QDir::separator())) {
-			base.chop(1);
-		}
-		VDir* dir = VDirOpenArchive(base.toUtf8().constData());
-		if (dir) {
-			VFile* vf = dir->openFile(dir, fname.toUtf8().constData(), O_RDONLY);
-			if (vf) {
-				struct VFile* vfclone = VFileMemChunk(NULL, vf->size(vf));
-				uint8_t buffer[2048];
-				ssize_t read;
-				while ((read = vf->read(vf, buffer, sizeof(buffer))) > 0) {
-					vfclone->write(vfclone, buffer, read);
-				}
-				vf->close(vf);
-				vf = vfclone;
-			}
-			dir->close(dir);
-			return loadGame(vf, fname, base);
-		} else {
-			LOG(QT, ERROR) << tr("Failed to open game file: %1").arg(path);
-		}
-		return nullptr;
-	}
 	VFile* vf = nullptr;
-	VDir* archive = VDirOpenArchive(path.toUtf8().constData());
-	if (archive) {
-		VFile* vfOriginal = VDirFindFirst(archive, [](VFile* vf) {
-			return mCoreIsCompatible(vf) != mPLATFORM_NONE;
-		});
-		ssize_t size;
-		if (vfOriginal && (size = vfOriginal->size(vfOriginal)) > 0) {
-			void* mem = vfOriginal->map(vfOriginal, size, MAP_READ);
-			vf = VFileMemChunk(mem, size);
-			vfOriginal->unmap(vfOriginal, mem, size);
-			vfOriginal->close(vfOriginal);
-		}
-	}
-	QDir dir(info.dir());
+	vf = VFileFromConstMemory(gSkyland_romData, gSkyland_romSize);
 	if (!vf) {
-		vf = VFileOpen(info.canonicalFilePath().toUtf8().constData(), O_RDONLY);
+                return nullptr;
 	}
-	return loadGame(vf, info.fileName(), dir.canonicalPath());
+	return loadGame(vf, "Skyland", "?");
 }
 
 CoreController* CoreManager::loadGame(VFile* vf, const QString& path, const QString& base) {

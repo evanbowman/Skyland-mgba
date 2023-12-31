@@ -117,6 +117,7 @@ ConfigController::ConfigController(QObject* parent)
 	m_opts.rewindEnable = false;
 	m_opts.rewindBufferCapacity = 300;
 	m_opts.useBios = true;
+        m_opts.skipBios = true;
 	m_opts.suspendScreensaver = true;
 	m_opts.lockAspectRatio = true;
 	m_opts.interframeBlending = false;
