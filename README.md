@@ -1,3 +1,6 @@
+# Disclaimer:
+I didn't write any of this code. I just forked mgba and changed some stuff.
+
 mGBA
 ====
 
