@@ -10,11 +10,11 @@ BEGIN
     BEGIN
         BLOCK "040904E4"
         BEGIN
-            VALUE "CompanyName",        "endrift"
-            VALUE "FileDescription",    "${PROJECT_NAME} Game Boy Advance emulator"
+            VALUE "CompanyName",        "EvanBowman"
+            VALUE "FileDescription",    "Skyland"
             VALUE "FileVersion",        "${LIB_VERSION_STRING}.0"
-            VALUE "InternalName",       "${BINARY_NAME}"
-            VALUE "LegalCopyright",     "(c) 2013 - 2021 Jeffrey Pfau"
+            VALUE "InternalName",       "Skyland"
+            VALUE "LegalCopyright",     "(c) 2021 - 2024 Evan Bowman, mgba (c) 2013 - 2021 Jeffrey Pfau"
             VALUE "OriginalFilename",   "${BINARY_NAME}"
             VALUE "ProductName",        "${PROJECT_NAME}"
             VALUE "ProductVersion",     "${BINARY_NAME}"

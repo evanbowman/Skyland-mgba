@@ -24,6 +24,7 @@
 INCBIN(Skyland_rom, "Skyland.gba");
 
 
+
 using namespace QGBA;
 
 void CoreManager::setConfig(const mCoreConfig* config) {
