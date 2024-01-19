@@ -340,6 +340,24 @@ void GBAIOInit(struct GBA* gba) {
 	}
 }
 
+
+
+static char skyland_mgba_arg_buffer[256];
+static int skyland_mgba_arg_write_pos;
+static int skyland_mgba_arg_read_pos;
+static int skyland_mgba_response_len;
+
+
+
+void skyland_mgba_command_reply(const char* resp)
+{
+    memset(skyland_mgba_arg_buffer, 0, sizeof skyland_mgba_arg_buffer);
+    strcpy(skyland_mgba_arg_buffer, resp);
+    skyland_mgba_response_len = strlen(resp);
+}
+
+
+
 void GBAIOWrite(struct GBA* gba, uint32_t address, uint16_t value) {
 	if (address < REG_SOUND1CNT_LO && (address > REG_VCOUNT || address < REG_DISPSTAT)) {
 		gba->memory.io[address >> 1] = gba->video.renderer->writeVideoRegister(gba->video.renderer, address, value);
@@ -570,6 +588,30 @@ void GBAIOWrite(struct GBA* gba, uint32_t address, uint16_t value) {
 	case REG_MAX:
 		// Some bad interrupt libraries will write to this
 		break;
+        case REG_SKYLAND_MGBA_COMMAND:
+                skyland_mgba_arg_write_pos = 0;
+                skyland_mgba_arg_read_pos = 0;
+                puts(skyland_mgba_arg_buffer);
+                switch (value) {
+                case 1:
+                    if (strcmp("HELLO.", skyland_mgba_arg_buffer) == 0) {
+                        skyland_mgba_command_reply("ACKNOWLEDGED.");
+                    }
+                    break;
+
+                case 2:
+                    break;
+
+                case 3:
+                    break;
+                }
+                break;
+        case REG_SKYLAND_MGBA_ARG:
+                if (skyland_mgba_arg_write_pos == sizeof skyland_mgba_arg_buffer) {
+                    break;
+                }
+                skyland_mgba_arg_buffer[skyland_mgba_arg_write_pos++] = (char)value;
+                break;
 	case REG_DEBUG_ENABLE:
 		gba->debug = value == 0xC0DE;
 		return;
@@ -932,6 +974,13 @@ uint16_t GBAIORead(struct GBA* gba, uint32_t address) {
 	case 0x206:
 		mLOG(GBA_IO, GAME_ERROR, "Read from unused I/O register: %03X", address);
 		return 0;
+
+        case REG_SKYLAND_MGBA_COMMAND:
+            return skyland_mgba_response_len;
+
+        case REG_SKYLAND_MGBA_ARG:
+            return skyland_mgba_arg_buffer[skyland_mgba_arg_read_pos++];
+
 	case REG_DEBUG_ENABLE:
 		if (gba->debug) {
 			return 0x1DEA;
