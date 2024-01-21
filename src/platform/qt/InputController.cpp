@@ -170,6 +170,16 @@ void InputController::setConfiguration(ConfigController* config) {
 
 void InputController::loadConfiguration(uint32_t type) {
 	mInputMapLoad(&m_inputMap, type, m_config->input());
+
+        // for (int i = 0; i < 12; ++i) {
+        //     int value = mInputQueryBinding(&m_inputMap, type, i);
+        //     char keyValue[24];
+        //     memset(keyValue, 0, sizeof keyValue);
+        //     snprintf(keyValue, 24, "%" PRIi32, value);
+        //     puts(keyValue);
+        // }
+
+
 #ifdef BUILD_SDL
 	if (m_playerAttached) {
 		mSDLPlayerLoadConfig(&m_sdlPlayer, m_config->input());

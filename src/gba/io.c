@@ -9,6 +9,7 @@
 #include <mgba/internal/gba/dma.h>
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/serialize.h>
+#include "mgba/core/input.h"
 
 mLOG_DEFINE_CATEGORY(GBA_IO, "GBA I/O", "gba.io");
 
@@ -343,9 +344,9 @@ void GBAIOInit(struct GBA* gba) {
 
 
 static char skyland_mgba_arg_buffer[256];
-static int skyland_mgba_arg_write_pos;
-static int skyland_mgba_arg_read_pos;
-static int skyland_mgba_response_len;
+static int skyland_mgba_arg_write_pos = 0;
+static int skyland_mgba_arg_read_pos = 0;
+static int skyland_mgba_response_len = 0;
 
 
 
@@ -589,28 +590,39 @@ void GBAIOWrite(struct GBA* gba, uint32_t address, uint16_t value) {
 		// Some bad interrupt libraries will write to this
 		break;
         case REG_SKYLAND_MGBA_COMMAND:
-                skyland_mgba_arg_write_pos = 0;
-                skyland_mgba_arg_read_pos = 0;
-                puts(skyland_mgba_arg_buffer);
-                switch (value) {
-                case 1:
-                    if (strcmp("HELLO.", skyland_mgba_arg_buffer) == 0) {
-                        skyland_mgba_command_reply("ACKNOWLEDGED.");
-                    }
-                    break;
+            while (1) ;
+                /* skyland_mgba_arg_write_pos = 0; */
+                /* skyland_mgba_arg_read_pos = 0; */
+                /* puts(skyland_mgba_arg_buffer); */
+                /* switch (value) { */
+                /* case 1: */
+                /*     if (strcmp("HELLO.", skyland_mgba_arg_buffer) == 0) { */
+                /*         skyland_mgba_command_reply("ACKNOWLEDGED."); */
+                /*     } */
+                /*     break; */
 
-                case 2:
-                    break;
+                /* case 2: { */
+                /*     char resp[16]; */
+                /*     memset(resp, 0, sizeof resp); */
 
-                case 3:
-                    break;
-                }
+                /*     /\* for (int i = 0; i < 12; ++i) { *\/ */
+                /*     /\*     int value = mInputQueryBinding(map, ); *\/ */
+                /*     /\* } *\/ */
+
+                /*     skyland_mgba_command_reply(resp); */
+                /*     break; */
+                /* } */
+
+                /* case 3: */
+                /*     // TODO: achievements */
+                /*     break; */
+                /* } */
                 break;
         case REG_SKYLAND_MGBA_ARG:
-                if (skyland_mgba_arg_write_pos == sizeof skyland_mgba_arg_buffer) {
-                    break;
-                }
-                skyland_mgba_arg_buffer[skyland_mgba_arg_write_pos++] = (char)value;
+                /* if (skyland_mgba_arg_write_pos == sizeof skyland_mgba_arg_buffer) { */
+                /*     break; */
+                /* } */
+                /* skyland_mgba_arg_buffer[skyland_mgba_arg_write_pos++] = (char)value; */
                 break;
 	case REG_DEBUG_ENABLE:
 		gba->debug = value == 0xC0DE;
@@ -976,9 +988,15 @@ uint16_t GBAIORead(struct GBA* gba, uint32_t address) {
 		return 0;
 
         case REG_SKYLAND_MGBA_COMMAND:
+            return 0;
             return skyland_mgba_response_len;
 
         case REG_SKYLAND_MGBA_ARG:
+            return 0;
+            if (skyland_mgba_arg_read_pos == skyland_mgba_response_len ||
+                skyland_mgba_arg_read_pos == sizeof skyland_mgba_arg_buffer) {
+                return 0;
+            }
             return skyland_mgba_arg_buffer[skyland_mgba_arg_read_pos++];
 
 	case REG_DEBUG_ENABLE:

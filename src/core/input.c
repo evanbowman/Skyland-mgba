@@ -213,6 +213,7 @@ static void _saveKey(const struct mInputMap* map, uint32_t type, const char* sec
 	int value = mInputQueryBinding(map, type, key);
 	char keyValue[KEY_VALUE_MAX];
 	snprintf(keyValue, KEY_VALUE_MAX, "%" PRIi32, value);
+        puts(keyValue);
 
 	ConfigurationSetValue(config, sectionName, keyKey, keyValue);
 }
