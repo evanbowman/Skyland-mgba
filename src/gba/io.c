@@ -11,6 +11,9 @@
 #include <mgba/internal/gba/serialize.h>
 #include "mgba/core/input.h"
 
+// Yuck. Copied from InputController.h
+static const uint32_t KEYBOARD = 0x51545F4B;
+
 mLOG_DEFINE_CATEGORY(GBA_IO, "GBA I/O", "gba.io");
 
 const char* const GBAIORegisterNames[] = {
@@ -359,6 +362,10 @@ void skyland_mgba_command_reply(const char* resp)
 
 
 
+extern struct mInputMap* g_inputmap;
+
+
+
 void GBAIOWrite(struct GBA* gba, uint32_t address, uint16_t value) {
 	if (address < REG_SOUND1CNT_LO && (address > REG_VCOUNT || address < REG_DISPSTAT)) {
 		gba->memory.io[address >> 1] = gba->video.renderer->writeVideoRegister(gba->video.renderer, address, value);
@@ -594,19 +601,71 @@ void GBAIOWrite(struct GBA* gba, uint32_t address, uint16_t value) {
                 skyland_mgba_arg_read_pos = 0;
                 switch (value) {
                 case 1:
-                    puts(skyland_mgba_arg_buffer);
                     if (strcmp("HELLO.", skyland_mgba_arg_buffer) == 0) {
                         skyland_mgba_command_reply("ACKNOWLEDGED.");
                     }
                     break;
 
                 case 2: {
-                    char resp[16];
+                    char resp[48];
+                    char* out = resp;
                     memset(resp, 0, sizeof resp);
 
-                    /* for (int i = 0; i < 12; ++i) { */
-                    /*     int value = mInputQueryBinding(map, ); */
-                    /* } */
+                    if (g_inputmap) {
+                        for (int i = 0; i < 10; ++i) {
+                            int value = mInputQueryBinding(g_inputmap,
+                                                           KEYBOARD,
+                                                           i);
+                            if (value < 127) {
+                                *out++ = value;
+                            } else {
+                                switch (value) {
+                                case 0x01000004: // return
+                                    *out++ = '\a';
+                                    *out++ = 'r';
+                                    break;
+                                case 0x01000000: // esc
+                                    *out++ = '\a';
+                                    *out++ = 'e';
+                                    break;
+                                case 0x01000001: // tab
+                                    *out++ = '\a';
+                                    *out++ = 't';
+                                    break;
+                                case 0x01000002: // backtab
+                                    *out++ = '\a';
+                                    *out++ = 'T';
+                                    break;
+                                case 0x01000003: // backspace
+                                    *out++ = '\a';
+                                    *out++ = 'b';
+                                    break;
+                                case 0x01000012: // left
+                                    *out++ = '\a';
+                                    *out++ = 'L';
+                                    break;
+                                case 0x01000013: // up
+                                    *out++ = '\a';
+                                    *out++ = 'U';
+                                    break;
+                                case 0x01000014: // right
+                                    *out++ = '\a';
+                                    *out++ = 'R';
+                                    break;
+                                case 0x01000015: // down
+                                    *out++ = '\a';
+                                    *out++ = 'D';
+                                    break;
+                                default:
+                                    printf("custom btn %d", value);
+                                    break;
+                                }
+                            }
+
+                        }
+                    }
+
+
 
                     skyland_mgba_command_reply(resp);
                     break;

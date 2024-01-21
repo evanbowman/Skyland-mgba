@@ -134,8 +134,13 @@ static struct mInputMapImpl* _guaranteeMap(struct mInputMap* map, uint32_t type)
 	return impl;
 }
 
+
+struct mInputMap* g_inputmap;
+
+
 static void _loadKey(struct mInputMap* map, uint32_t type, const char* sectionName, const struct Configuration* config, int key, const char* keyName) {
 	char keyKey[KEY_NAME_MAX];
+        g_inputmap = map;
 	snprintf(keyKey, KEY_NAME_MAX, "key%s", keyName);
 	keyKey[KEY_NAME_MAX - 1] = '\0';
 
@@ -213,7 +218,6 @@ static void _saveKey(const struct mInputMap* map, uint32_t type, const char* sec
 	int value = mInputQueryBinding(map, type, key);
 	char keyValue[KEY_VALUE_MAX];
 	snprintf(keyValue, KEY_VALUE_MAX, "%" PRIi32, value);
-        puts(keyValue);
 
 	ConfigurationSetValue(config, sectionName, keyKey, keyValue);
 }

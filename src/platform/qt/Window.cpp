@@ -1281,7 +1281,7 @@ void Window::setupMenu(QMenuBar* menubar) {
 
 	m_actions.addSeparator("av");
 
-	m_actions.addMenu(tr("&Tools"), "tools");
+	m_actions.addMenu(tr("&Settings"), "tools");
 	m_actions.addAction(tr("Settings..."), "settings", this, &Window::openSettingsWindow, "tools");
 
 	// ConfigOption* skipBios = m_config->addOption("skipBios");
